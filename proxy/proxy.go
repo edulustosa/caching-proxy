@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +17,8 @@ func Handler(origin *url.URL, caching cache.Cache) http.HandlerFunc {
 			for k, v := range originResponse.Headers {
 				w.Header()[k] = v
 			}
+			fmt.Println("X-Cache: HIT")
+
 			w.Header().Set("X-Cache", "HIT")
 			w.WriteHeader(originResponse.StatusCode)
 			w.Write([]byte(originResponse.Body))
@@ -60,6 +63,7 @@ func Handler(origin *url.URL, caching cache.Cache) http.HandlerFunc {
 		for k, v := range originResponse.Headers {
 			w.Header()[k] = v
 		}
+		fmt.Println("X-Cache: MISS")
 		w.Header().Set("X-Cache", "MISS")
 		w.WriteHeader(originResponse.StatusCode)
 		w.Write([]byte(originResponse.Body))

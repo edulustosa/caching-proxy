@@ -21,7 +21,7 @@ caching-proxy --port 3001 --origin https://jsonplaceholder.typicode.com
 
 ## Installation
 
-You can download the linux binaries from the releases page or build from source. You must have [Go installed](https://go.dev/doc/install)
+You can download the linux binaries from the [releases page](https://github.com/edulustosa/caching-proxy/releases) or build from source. You must have [Go installed](https://go.dev/doc/install)
 
 ``` bash
 go build .

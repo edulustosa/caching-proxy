@@ -4,4 +4,11 @@ tmp_dir = "bin"
 [build]
 cmd = "go build -o ./bin/caching-proxy ./main.go"
 bin = "bin/caching-proxy"
-args_bin = ["--port", "3001", "--origin", "https://jsonplaceholder.typicode.com"]
+args_bin = [
+  "--port",
+  "3001",
+  "--origin",
+  "https://jsonplaceholder.typicode.com",
+  "--redis-url",
+  "redis://localhost:6379/0",
+]

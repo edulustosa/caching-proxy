@@ -15,6 +15,7 @@ type OriginResponse struct {
 	Body       string              `json:"body"`
 }
 
+// Interface representing caching operations
 type Cache interface {
 	Get(ctx context.Context, key string) (OriginResponse, error)
 	Set(ctx context.Context, key string, value OriginResponse) error

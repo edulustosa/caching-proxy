@@ -22,6 +22,7 @@ func main() {
 	flag.Parse()
 
 	if *origin == "" {
+		fmt.Fprintln(os.Stderr, "usage: caching-proxy --port <port> --origin <origin> [--redis-url <redis-url>] [--clear-cache]")
 		fmt.Fprintln(os.Stderr, "origin is required")
 		os.Exit(1)
 	}
@@ -36,7 +37,8 @@ func main() {
 	if *redisURL != "" {
 		redisCache, err := cache.NewRedisCache(*redisURL)
 		if err != nil {
-			log.Fatalf("Error creating redis cache: %v", err)
+			fmt.Fprintf(os.Stderr, "error connecting to redis: %s\n", err.Error())
+			os.Exit(1)
 		}
 		caching = redisCache
 	} else {
@@ -46,7 +48,8 @@ func main() {
 
 	if *clearCache {
 		if err := caching.Clear(context.Background()); err != nil {
-			log.Fatalf("Error clearing cache: %v", err)
+			fmt.Fprintf(os.Stderr, "error cleaning cache: %s\n", err.Error())
+			os.Exit(1)
 		}
 	}
 

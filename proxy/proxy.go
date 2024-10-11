@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -47,7 +48,14 @@ func Handler(origin *url.URL, caching cache.Cache) http.HandlerFunc {
 			Body:       string(body),
 		}
 
-		caching.Set(r.Context(), r.URL.String(), originResponse)
+		err = caching.Set(r.Context(), r.URL.String(), originResponse)
+		if err != nil {
+			log.Printf(
+				"failed to cache origin response err = %s url = %s",
+				err.Error(),
+				targetURL,
+			)
+		}
 
 		for k, v := range originResponse.Headers {
 			w.Header()[k] = v

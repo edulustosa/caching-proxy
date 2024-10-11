@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -10,8 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
-	"github.com/edulustosa/caching-proxy/memory"
+	"github.com/edulustosa/caching-proxy/cache"
 )
 
 func main() {
@@ -31,8 +30,8 @@ func main() {
 	if *redisURL != "" {
 		// TODO
 	} else {
-		cache := memory.NewCache()
-		proxy = handleRequest(originURL, cache)
+		memoryCache := cache.NewMemoryCache()
+		proxy = handleRequest(originURL, memoryCache)
 	}
 
 	srv := &http.Server{
@@ -48,17 +47,11 @@ func main() {
 
 var customTransport = http.DefaultTransport
 
-type cache interface {
-	Get(ctx context.Context, key string) ([]byte, error)
-	Set(ctx context.Context, key string, value []byte) error
-	Clear(ctx context.Context) error
-}
-
-func handleRequest(origin *url.URL, cache cache) http.HandlerFunc {
+func handleRequest(origin *url.URL, cacheDB cache.Cache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		targetURL := origin.String() + r.URL.RequestURI()
 
-		data, err := cache.Get(r.Context(), targetURL)
+		data, err := cacheDB.Get(r.Context(), targetURL)
 		if err != nil {
 			proxyReq, err := http.NewRequest(r.Method, targetURL, r.Body)
 			if err != nil {
@@ -85,22 +78,35 @@ func handleRequest(origin *url.URL, cache cache) http.HandlerFunc {
 				return
 			}
 
-			if err := cache.Set(r.Context(), targetURL, body); err != nil {
+			cacheResp := cache.OriginResponse{
+				StatusCode: resp.StatusCode,
+				Headers:    resp.Header,
+				Body:       string(body),
+			}
+
+			if err := cacheDB.Set(r.Context(), targetURL, cacheResp); err != nil {
 				log.Printf("Error caching response: %v", err)
 			}
 
-			for name, values := range resp.Header {
-				for _, value := range values {
-					w.Header().Add(name, value)
-				}
-			}
-
 			w.Header().Set("X-Cache", "MISS")
-			w.WriteHeader(resp.StatusCode)
-			io.Copy(w, bytes.NewReader(body))
+			send(w, cacheResp)
 		}
 
 		w.Header().Set("X-Cache", "HIT")
-		io.Copy(w, bytes.NewReader(data))
+		send(w, data)
 	}
+}
+
+func send(w http.ResponseWriter, resp cache.OriginResponse) {
+	if w.Header().Get("X-Cache") == "" {
+		for name, values := range resp.Headers {
+			for _, value := range values {
+				w.Header().Add(name, value)
+			}
+		}
+
+		w.WriteHeader(resp.StatusCode)
+	}
+
+	io.Copy(w, strings.NewReader(resp.Body))
 }

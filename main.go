@@ -48,12 +48,6 @@ func main() {
 
 var customTransport = http.DefaultTransport
 
-type Response struct {
-	StatusCode int
-	Header     map[string][]string
-	Body       []byte
-}
-
 type cache interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 	Set(ctx context.Context, key string, value []byte) error
